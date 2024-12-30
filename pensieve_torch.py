@@ -205,12 +205,21 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue,
 
                 state = torch.roll(state, -1,dims=-1)
 
-                state[0,0, -1] = VIDEO_BIT_RATE[bit_rate] / float(np.max(VIDEO_BIT_RATE))  # last quality
-                state[0,1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 10 sec
-                state[0,2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
-                state[0,3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
-                state[0,4, :A_DIM] = torch.tensor(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-                state[0,5, -1] = min(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+                # state[0,0, -1] = VIDEO_BIT_RATE[bit_rate] / float(np.max(VIDEO_BIT_RATE))  # last quality
+                # state[0,1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 10 sec
+                # state[0,2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
+                # state[0,3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
+                # state[0,4, :A_DIM] = torch.tensor(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+                # state[0,5, -1] = min(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+                #TODO: 
+                ## 1. 实现get_throughput_from_cloud
+                ## 2. 实现get_next_chunk_size_from_cloud
+                ## 3. 实现get_RTT_from_cloud
+                state[0, 0, -1] = throughput / M_IN_K  # 过去的吞吐量（已存在）
+                state[0, 1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 缓冲区状态（已存在）
+                state[0, 2, -1] = next_chunk_size / M_IN_K  # 下一个时刻的可选码率（已存在）
+                state[0, 3, -1] = RTT / 1000.0  # RTT（新加）
+                state[0, 4, -1] = last_bit_rate  # 上一个时刻选择的码率（已存在）
 
                 bit_rate = net.actionSelect(state)
                 # Note: we need to discretize the probability into 1/RAND_RANGE steps,
@@ -220,10 +229,14 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue,
                 video_chunk_size, next_video_chunk_sizes, \
                 end_of_video, video_chunk_remain = \
                     net_env.get_video_chunk(bit_rate)
+                # reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
+                #          - REBUF_PENALTY * rebuf \
+                #          - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
+                #                                    VIDEO_BIT_RATE[last_bit_rate]) / M_IN_K
                 reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
-                         - REBUF_PENALTY * rebuf \
-                         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
-                                                   VIDEO_BIT_RATE[last_bit_rate]) / M_IN_K
+         - REBUF_PENALTY * rebuf \
+         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] - VIDEO_BIT_RATE[last_bit_rate]) / M_IN_K \
+         - RTT_PENALTY * RTT  # 新加入的RTT惩罚项
 
                 s_batch.append(state)
                 a_batch.append(bit_rate)
