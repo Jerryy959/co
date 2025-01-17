@@ -18,6 +18,7 @@ class A3C(object):
 
         self.is_central=is_central
         self.device=torch.device(device)
+        # self.device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.actorNetwork=ActorNetwork(self.s_dim,self.a_dim).to(self.device)
         if self.is_central:
