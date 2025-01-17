@@ -310,6 +310,7 @@ def main(arglist):
 def parse_args():
     parser=argparse.ArgumentParser("Pensieve")
     parser.add_argument("--model_type",type=int,default=0,help="Refer to README for the meaning of this parameter")
+    parser.add_argument("--device",type=str,default="cpu",help="cpu or cuda")
     return parser.parse_args()
 
 if __name__ == '__main__':

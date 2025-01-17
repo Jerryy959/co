@@ -8,7 +8,7 @@ PATH='./results/'
 
 RAND_RANGE=1000
 class A3C(object):
-    def __init__(self,is_central,model_type,s_dim,action_dim,actor_lr=1e-4,critic_lr=1e-3):
+    def __init__(self,is_central,model_type,s_dim,action_dim,actor_lr=1e-4,critic_lr=1e-3,device="cpu"):
         self.s_dim=s_dim
         self.a_dim=action_dim
         self.discount=0.99
@@ -17,9 +17,8 @@ class A3C(object):
         self.model_type=model_type
 
         self.is_central=is_central
+        self.device=torch.device(device)
         # self.device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # self.device="cpu"
-        self.device="cuda"
 
         self.actorNetwork=ActorNetwork(self.s_dim,self.a_dim).to(self.device)
         if self.is_central:
