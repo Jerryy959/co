@@ -47,7 +47,6 @@ class A3C(object):
         a_batch=torch.LongTensor(a_batch).to(self.device)
         r_batch=torch.tensor(r_batch).to(self.device)
         R_batch=torch.zeros(r_batch.shape).to(self.device)
-
         R_batch[-1] = r_batch[-1]
         for t in reversed(range(r_batch.shape[0]-1)):
             R_batch[t]=r_batch[t] + self.discount*R_batch[t+1]
