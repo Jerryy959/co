@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-#
 import os
 import logging
 import argparse
@@ -11,7 +12,8 @@ from datetime import datetime
 import time
 import requests
 
-S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+#S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 5
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
@@ -41,7 +43,7 @@ CRITIC_MODEL = None
 TOTALEPOCH=30000
 IS_CENTRAL=True
 NO_CENTRAL=False
-
+RTT_PENALTY = max(VIDEO_BIT_RATE) / 1000
 def get_metrics_from_cloud():
     url = 'http://localhost:5000/metrics'
     resp = requests.get(url)
