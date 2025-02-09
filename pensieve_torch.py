@@ -47,7 +47,7 @@ RTT_PENALTY = max(VIDEO_BIT_RATE) / 1000
 def get_metrics_from_cloud():
     url = 'http://localhost:5000/metrics'
     resp = requests.get(url)
-    if requests.status_codes == 200:
+    if requests.status_codes.codes.ok == resp.status_code:
         cloud_metrics = resp.json()
         throughput = cloud_metrics['throughput']
         next_chunk_size = cloud_metrics['next_chunk_size']
