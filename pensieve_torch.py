@@ -111,7 +111,7 @@ def central_agent(net_params_queues, exp_queues, model_type):
                         level=logging.INFO)
 
 
-    net=A3C(IS_CENTRAL,model_type,[S_INFO,S_LEN],A_DIM,ACTOR_LR_RATE,CRITIC_LR_RATE)
+    net=A3C(IS_CENTRAL,model_type,[S_INFO,S_LEN],A_DIM,ACTOR_LR_RATE,CRITIC_LR_RATE, device=arglist.device)
     test_log_file=open(LOG_FILE+'_test','w')
 
     if CRITIC_MODEL is not None and os.path.exists(ACTOR_MODEL):
@@ -188,7 +188,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue,
 
     with open(LOG_FILE+'_agent_'+str(agent_id),'w') as log_file:
 
-        net=A3C(NO_CENTRAL,model_type,[S_INFO,S_LEN],A_DIM,ACTOR_LR_RATE,CRITIC_LR_RATE)
+        net=A3C(NO_CENTRAL,model_type,[S_INFO,S_LEN],A_DIM,ACTOR_LR_RATE,CRITIC_LR_RATE, device=arglist.device)
 
         # initial synchronization of the network parameters from the coordinator
 
