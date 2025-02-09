@@ -9,7 +9,7 @@ import torch
 from A3C import A3C
 from datetime import datetime
 import time
-
+import requests
 
 S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
@@ -41,6 +41,20 @@ CRITIC_MODEL = None
 TOTALEPOCH=30000
 IS_CENTRAL=True
 NO_CENTRAL=False
+
+def get_metrics_from_cloud():
+    url = 'http://localhost:5000/metrics'
+    resp = requests.get(url)
+    if requests.status_codes == 200:
+        cloud_metrics = resp.json()
+        throughput = cloud_metrics['throughput']
+        next_chunk_size = cloud_metrics['next_chunk_size']
+        RTT = cloud_metrics['RTT']
+    else:
+        throughput = 0
+        next_chunk_size = 0
+        RTT = 0
+    return throughput, next_chunk_size, RTT
 
 def testing(epoch, actor_model,log_file):
     # clean up the test results folder
@@ -215,6 +229,8 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue,
                 ## 1. 实现get_throughput_from_cloud
                 ## 2. 实现get_next_chunk_size_from_cloud
                 ## 3. 实现get_RTT_from_cloud
+
+                throughput, next_chunk_size, RTT = get_metrics_from_cloud()
                 state[0, 0, -1] = throughput / M_IN_K  # 过去的吞吐量（已存在）
                 state[0, 1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 缓冲区状态（已存在）
                 state[0, 2, -1] = next_chunk_size / M_IN_K  # 下一个时刻的可选码率（已存在）
