@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -13,7 +14,7 @@ class ActorNetwork(nn.Module):
         self.a_dim=action_dim
         self.vectorOutDim=n_conv
         self.scalarOutDim=n_fc
-        self.numFcInput=2 * self.vectorOutDim * (self.s_dim[1]-4+1) + 3 * self.scalarOutDim + self.vectorOutDim*(self.a_dim-4+1)
+        self.numFcInput=2 * self.vectorOutDim * (self.s_dim[1]-4+1) + 2 * self.scalarOutDim + self.vectorOutDim*(self.a_dim-4+1)
         self.numFcOutput=n_fc1
 
         #-------------------define layer-------------------
@@ -67,7 +68,7 @@ class ActorNetwork(nn.Module):
 
         cConv1dOut=F.relu(self.cConv1d(inputs[:,4:5,:self.a_dim]),inplace=True)
        
-        leftChunkFcOut=F.relu(self.leftChunkFc(inputs[:,5:6,-1]),inplace=True)
+        # leftChunkFcOut=F.relu(self.leftChunkFc(inputs[:,5:6,-1]),inplace=True)
 
         t_flatten=tConv1dOut.view(tConv1dOut.shape[0],-1)
 
@@ -75,7 +76,8 @@ class ActorNetwork(nn.Module):
 
         c_flatten=cConv1dOut.view(dConv1dOut.shape[0],-1)
 
-        fullyConnectedInput=torch.cat([bitrateFcOut,bufferFcOut,t_flatten,d_flatten,c_flatten,leftChunkFcOut],1)
+        # fullyConnectedInput=torch.cat([bitrateFcOut,bufferFcOut,t_flatten,d_flatten,c_flatten,leftChunkFcOut],1)
+        fullyConnectedInput=torch.cat([bitrateFcOut,bufferFcOut,t_flatten,d_flatten,c_flatten],1)
 
         fcOutput=F.relu(self.fullyConnected(fullyConnectedInput),inplace=True)
         
@@ -93,7 +95,7 @@ class CriticNetwork(nn.Module):
         self.a_dim=a_dim
         self.vectorOutDim=n_conv
         self.scalarOutDim=n_fc
-        self.numFcInput=2 * self.vectorOutDim * (self.s_dim[1]-4+1) + 3 * self.scalarOutDim + self.vectorOutDim*(self.a_dim-4+1)
+        self.numFcInput=2 * self.vectorOutDim * (self.s_dim[1]-4+1) + 2 * self.scalarOutDim + self.vectorOutDim*(self.a_dim-4+1)
         self.numFcOutput=n_fc1
 
         #----------define layer----------------------
@@ -145,7 +147,7 @@ class CriticNetwork(nn.Module):
 
         cConv1dOut=F.relu(self.cConv1d(inputs[:,4:5,:self.a_dim]),inplace=True)
        
-        leftChunkFcOut=F.relu(self.leftChunkFc(inputs[:,5:6,-1]),inplace=True)
+        # leftChunkFcOut=F.relu(self.leftChunkFc(inputs[:,5:6,-1]),inplace=True)
 
         t_flatten=tConv1dOut.view(tConv1dOut.shape[0],-1)
 
@@ -153,7 +155,7 @@ class CriticNetwork(nn.Module):
 
         c_flatten=cConv1dOut.view(dConv1dOut.shape[0],-1)
 
-        fullyConnectedInput=torch.cat([bitrateFcOut,bufferFcOut,t_flatten,d_flatten,c_flatten,leftChunkFcOut],1)
+        fullyConnectedInput=torch.cat([bitrateFcOut,bufferFcOut,t_flatten,d_flatten,c_flatten],1)
 
         fcOutput=F.relu(self.fullyConnected(fullyConnectedInput),inplace=True)
         
@@ -161,44 +163,63 @@ class CriticNetwork(nn.Module):
 
         return out
 
+
+
 if __name__ =='__main__':
-    S_INFO=6
-    S_LEN=8
-    AGENT_NUM=3
-    ACTION_DIM=6
+    S_INFO = 5
+    S_LEN = 8
+    AGENT_NUM = 3
+    ACTION_DIM = 6
 
-    discount=0.9
+    c_net = CriticNetwork([S_INFO, S_LEN], ACTION_DIM)
+    a_net = ActorNetwork([S_INFO, S_LEN], ACTION_DIM)
 
-    c_net=CriticNetwork([S_INFO,S_LEN],ACTION_DIM) # agent_num=2
+    npState = torch.randn(AGENT_NUM, S_INFO, S_LEN)  # 现在是 (3, 5, 8)
+    print("Testing action selection...")
+    action = a_net.forward(npState)
+    print("Selected action:", action)
 
-    t_c_net=CriticNetwork([S_INFO,S_LEN],ACTION_DIM)
+    print("Testing critic network forward...")
+    q = c_net.forward(npState)
+    print("Critic Q-value:", q)
 
-    a_net=ActorNetwork([S_INFO,S_LEN],ACTION_DIM) # action_dime=4
+    # S_INFO=6
+    # S_LEN=8
+    # AGENT_NUM=3
+    # ACTION_DIM=6
 
-    a_optim=torch.optim.Adam(a_net.parameters(),lr=0.001)
+    # discount=0.9
 
-    c_optim=torch.optim.Adam(c_net.parameters(),lr=0.005)
+    # c_net=CriticNetwork([S_INFO,S_LEN],ACTION_DIM) # agent_num=2
 
-    loss_func=nn.MSELoss()
+    # t_c_net=CriticNetwork([S_INFO,S_LEN],ACTION_DIM)
 
-    esp=100
-    for i in range(esp):
-        npState=torch.randn(AGENT_NUM,S_INFO,S_LEN)
-        next_npState=torch.randn(AGENT_NUM,S_INFO,S_LEN)
-        #reward=torch.randn(1)
-        reward=torch.randn(AGENT_NUM)
+    # a_net=ActorNetwork([S_INFO,S_LEN],ACTION_DIM) # action_dime=4
 
-        action=a_net.forward(npState)
-        t_action=a_net.forward(next_npState)
+    # a_optim=torch.optim.Adam(a_net.parameters(),lr=0.001)
 
-        q=c_net.forward(npState)
-        t_q_out=t_c_net.forward(next_npState)
+    # c_optim=torch.optim.Adam(c_net.parameters(),lr=0.005)
 
-        updateCriticLoss=loss_func(reward,q)
+    # loss_func=nn.MSELoss()
 
-        c_net.zero_grad()
-        updateCriticLoss.backward()
-        c_optim.step()
+    # esp=100
+    # for i in range(esp):
+    #     npState=torch.randn(AGENT_NUM,S_INFO,S_LEN)
+    #     next_npState=torch.randn(AGENT_NUM,S_INFO,S_LEN)
+    #     #reward=torch.randn(1)
+    #     reward=torch.randn(AGENT_NUM)
+
+    #     action=a_net.forward(npState)
+    #     t_action=a_net.forward(next_npState)
+
+    #     q=c_net.forward(npState)
+    #     t_q_out=t_c_net.forward(next_npState)
+
+    #     updateCriticLoss=loss_func(reward,q)
+
+    #     c_net.zero_grad()
+    #     updateCriticLoss.backward()
+    #     c_optim.step()
 
 
 
